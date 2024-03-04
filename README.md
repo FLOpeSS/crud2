@@ -1,1 +1,1 @@
-Just coding a simpole CRUD, using Docker and Mysql/Mariadb.
+Just coding a simple CRUD, using Docker and Mysql/Mariadb.
