@@ -1,7 +1,6 @@
-USE crud;
-
-CREATE TABLE books (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    title VARCHAR(255) NOT NULL,
-    author VARCHAR(255) NOT NULL
+CREATE TABLE `crud`.`names` (
+    `id` int(6) unsigned NOT NULL AUTO_INCREMENT,
+    `name` varchar(30) NOT NULL,
+    `email` varchar(30) NOT NULL,
+    PRIMARY KEY(`id`)
 );

@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 
@@ -11,6 +12,7 @@ import (
 )
 
 var db *sql.DB
+var tmpl = template.Must(template.ParseGlob("tmpl/*"))
 
 type Names struct {
 	Id    int
@@ -23,16 +25,16 @@ func dbConn() *sql.DB {
 	if err != nil {
 		fmt.Println("err: ", err)
 	}
+	defer db.Close()
 	return db
 }
 
 func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/", homepage).Methods("GET")
+	r.HandleFunc("/show", show)
 	r.HandleFunc("/new", newUser)
 	r.HandleFunc("/edit", edit)
-
-	// r.HandleFunc("/show", show)
 
 	fmt.Println("Server ruuning at port: 3000")
 	log.Fatal(http.ListenAndServe(":3000", r))
@@ -40,8 +42,7 @@ func main() {
 
 func homepage(w http.ResponseWriter, r *http.Request) {
 	db := dbConn()
-	defer db.Close()
-	que, err := db.Query("SELECT * FROM names ORDER BY id DESC")
+	que, err := db.Query("SELEC * FROM names ORDER BY id DESC")
 	if err != nil {
 		fmt.Println("err: ", err)
 	}
@@ -56,25 +57,14 @@ func homepage(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			fmt.Println("Error: ", err)
 		}
-		n.Id = id
-		n.Name = name
-		n.Email = email
-
-		res = append(res, n)
-
 	}
-	fmt.Println(res)
+
 }
 
-//	func show(w http.ResponseWriter, r *http.Request) {
-//		db := dbConn()
-//
-//		nId := r.URL.Query().Get("id")
-//		que, err := db.Query("SELECT * FROM names WHERE id=?", nId)
-//		if err != nil {
-//			fmt.Println("err: ", err)
-//		}
-//	}
+func show(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("request from show")
+}
+
 func newUser(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("request from newUser")
 }

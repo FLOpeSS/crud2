@@ -5,8 +5,12 @@ WORKDIR /app
 COPY . .
 
 run go mod tidy
-run go build -o bin/main main.go
+run go build -o main main.go
 
+# EXPOSE 3000
 
-CMD["./bin/main"]
+# COPY main.go /
 
+# CMD["./main"]
+
+CMD ["./main"]
