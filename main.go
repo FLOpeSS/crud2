@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -10,7 +11,36 @@ import (
 	"github.com/gorilla/mux"
 )
 
-var db *sql.DB
+// json.NewDecoder is reading data from r.body
+// r.body is data sent by the client
+// Decode(*usr) is going to decode from the r.body to usr variable
+
+// Insert new user to db
+
+func inserUser(w http.ResponseWriter, r *http.Request) {
+	var user Names
+	err := json.NewDecoder(r.Body).Decode(&user)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	db, err := dbConn()
+	if err != nil {
+		fmt.Println("Error: ", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer db.Close()
+
+	res, err := db.Exec("INSERT INTO names (name) VALUES(?)", user.Name)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	fmt.Println(res)
+
+}
 
 type Names struct {
 	Id    int
@@ -18,12 +48,12 @@ type Names struct {
 	Email string
 }
 
-func dbConn() *sql.DB {
+func dbConn() (*sql.DB, error) {
 	db, err := sql.Open("mysql", "sneto:jms@tcp(127.0.0.1:3306)/crud")
 	if err != nil {
-		fmt.Println("err: ", err)
+		return nil, err
 	}
-	return db
+	return db, nil
 }
 
 func main() {
@@ -39,12 +69,16 @@ func main() {
 }
 
 func homepage(w http.ResponseWriter, r *http.Request) {
-	db := dbConn()
+	db, err := dbConn()
+	if err != nil {
+		fmt.Errorf("Error on connecting db: ", err)
+	}
 	defer db.Close()
 	que, err := db.Query("SELECT * FROM names ORDER BY id DESC")
 	if err != nil {
 		fmt.Println("err: ", err)
 	}
+
 	n := Names{}
 	res := []Names{}
 
@@ -65,6 +99,31 @@ func homepage(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Println(res)
 }
+
+// func showing_names(w http.ResponseWriter, r *http.Request) []Names {
+// 	db := dbConn()
+// 	defer db.Close()
+// 	que, err := db.Query("SELECT * FROM names")
+// 	if err != nil {
+// 		fmt.Println("Error: ", err)
+// 	}
+//
+// 	n := Names{}
+// 	res := []Names{}
+//
+// 	for que.Next() {
+// 		var name string
+//
+// 		err := que.Scan(&name)
+// 		if err != nil {
+// 			fmt.Println("que.Scan error: ", err)
+// 		}
+// 		n.Name = name
+// 		res = append(res, n)
+//
+// 	}
+// 	return res
+// }
 
 //	func show(w http.ResponseWriter, r *http.Request) {
 //		db := dbConn()
