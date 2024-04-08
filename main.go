@@ -16,8 +16,83 @@ import (
 // Decode(*usr) is going to decode from the r.body to usr variable
 
 // Insert new user to db
+type Names struct {
+	// Id    int
+	Name string
+	// Email string
+}
 
-func inserUser(w http.ResponseWriter, r *http.Request) {
+func dbConn() (*sql.DB, error) {
+	db, err := sql.Open("mysql", "sneto:jms@tcp(127.0.0.1:3306)/crud")
+	if err != nil {
+		return nil, err
+	}
+	return db, nil
+}
+
+func main() {
+	r := mux.NewRouter()
+	r.HandleFunc("/", homepage).Methods("GET")
+	r.HandleFunc("/new", insertUser)
+	r.HandleFunc("/delete", deleteUser)
+
+	// r.HandleFunc("/show", show)
+
+	fmt.Println("Server ruuning at port: 3000")
+	log.Fatal(http.ListenAndServe(":3000", r))
+}
+
+func deleteUser(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Hello world")
+}
+
+func homepage(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-type", "application/json")
+
+	db, err := dbConn()
+	if err != nil {
+		fmt.Println("Error: ", err)
+	}
+	defer db.Close()
+
+	que, err := db.Query("SELECT * FROM names ORDER BY id DESC")
+	if err != nil {
+		fmt.Println("err: ", err)
+	}
+	defer que.Close()
+
+	var n Names
+	var res []Names
+	// n := Names{}
+	// res := []Names{}
+
+	for que.Next() {
+		// var id int
+		var name string
+		err = que.Scan(&name)
+		if err != nil {
+			fmt.Println("Error: ", err)
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
+		// n.Id = id
+		// n.Email = email
+
+		n.Name = name
+		res = append(res, n)
+	}
+	jsonResponse, err := json.Marshal(res)
+	if err != nil {
+		fmt.Println("Error: ", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+	w.Write(jsonResponse)
+}
+
+func insertUser(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-type", "application/json")
+
 	var user Names
 	err := json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
@@ -40,104 +115,11 @@ func inserUser(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Println(res)
 
-}
-
-type Names struct {
-	Id    int
-	Name  string
-	Email string
-}
-
-func dbConn() (*sql.DB, error) {
-	db, err := sql.Open("mysql", "sneto:jms@tcp(127.0.0.1:3306)/crud")
+	response := map[string]string{"message": "User inserted"}
+	jsonResponse, err := json.Marshal(response)
 	if err != nil {
-		return nil, err
+		fmt.Println("Error occured: ", err)
+		return
 	}
-	return db, nil
-}
-
-func main() {
-	r := mux.NewRouter()
-	r.HandleFunc("/", homepage).Methods("GET")
-	r.HandleFunc("/new", newUser)
-	r.HandleFunc("/edit", edit)
-
-	// r.HandleFunc("/show", show)
-
-	fmt.Println("Server ruuning at port: 3000")
-	log.Fatal(http.ListenAndServe(":3000", r))
-}
-
-func homepage(w http.ResponseWriter, r *http.Request) {
-	db, err := dbConn()
-	if err != nil {
-		fmt.Errorf("Error on connecting db: ", err)
-	}
-	defer db.Close()
-	que, err := db.Query("SELECT * FROM names ORDER BY id DESC")
-	if err != nil {
-		fmt.Println("err: ", err)
-	}
-
-	n := Names{}
-	res := []Names{}
-
-	for que.Next() {
-		var id int
-		var name, email string
-
-		err = que.Scan(&id, &name, &email)
-		if err != nil {
-			fmt.Println("Error: ", err)
-		}
-		n.Id = id
-		n.Name = name
-		n.Email = email
-
-		res = append(res, n)
-
-	}
-	fmt.Println(res)
-}
-
-// func showing_names(w http.ResponseWriter, r *http.Request) []Names {
-// 	db := dbConn()
-// 	defer db.Close()
-// 	que, err := db.Query("SELECT * FROM names")
-// 	if err != nil {
-// 		fmt.Println("Error: ", err)
-// 	}
-//
-// 	n := Names{}
-// 	res := []Names{}
-//
-// 	for que.Next() {
-// 		var name string
-//
-// 		err := que.Scan(&name)
-// 		if err != nil {
-// 			fmt.Println("que.Scan error: ", err)
-// 		}
-// 		n.Name = name
-// 		res = append(res, n)
-//
-// 	}
-// 	return res
-// }
-
-//	func show(w http.ResponseWriter, r *http.Request) {
-//		db := dbConn()
-//
-//		nId := r.URL.Query().Get("id")
-//		que, err := db.Query("SELECT * FROM names WHERE id=?", nId)
-//		if err != nil {
-//			fmt.Println("err: ", err)
-//		}
-//	}
-func newUser(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("request from newUser")
-}
-
-func edit(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("request from edit")
+	w.Write(jsonResponse)
 }
